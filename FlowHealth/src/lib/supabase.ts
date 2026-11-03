@@ -1,5 +1,8 @@
 import { createClient } from '@supabase/supabase-js'
 
+/** Read before Supabase consumes the URL: true when the app was opened from a password reset link. */
+export const openedFromRecoveryLink = typeof window !== 'undefined' && /(^|[#&?])type=recovery(&|$)/.test(window.location.hash)
+
 /**
  * The project URL and publishable key are designed to be public: they only allow
  * what the Row Level Security policies in supabase/schema.sql permit.
