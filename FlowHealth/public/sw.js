@@ -8,7 +8,7 @@
  *
  * Bump VERSION to force every device to drop the old saved files.
  */
-const VERSION = 'v2'
+const VERSION = 'v3'
 const CACHE = `flowhealth-${VERSION}`
 const SHELL = ['/', '/manifest.webmanifest', '/favicon.svg', '/icons/icon-192.png', '/icons/apple-touch-icon.png']
 

@@ -385,3 +385,6 @@ input[aria-invalid='true'] { color: var(--danger) !important; }
 .badge.unlocked strong { color: var(--ink); }
 .badge.unlocked .badge-icon { background: var(--sage-500); color: white; }
 @media (max-width: 350px) { .badge-grid { grid-template-columns: repeat(2, 1fr); } }
+
+/* --- Becky Boost logo --- */
+.brand-mark { flex: 0 0 auto; display: block; border-radius: .5rem; box-shadow: 0 3px 10px rgba(24,62,51,.18); }
