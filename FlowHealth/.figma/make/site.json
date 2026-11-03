@@ -1,0 +1,12 @@
+{
+  "title": "FlowHealth",
+  "language": "en",
+  "description": "Track current and goal weight, progress, estimated milestones, and weight trends in a refined health dashboard for people pursuing weight goals.",
+  "robots": {
+    "index": false
+  },
+  "accessibility": {
+    "addBypassLinks": false,
+    "ignoreReducedMotion": false
+  }
+}
