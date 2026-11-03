@@ -1,5 +1,5 @@
 /*
- * FlowHealth service worker: lets the app start without a network connection.
+ * Becky Boost service worker: lets the app start without a network connection.
  *
  * - The page itself (index.html): network first, so new versions show up right away;
  *   falls back to the saved copy when offline.
@@ -8,7 +8,7 @@
  *
  * Bump VERSION to force every device to drop the old saved files.
  */
-const VERSION = 'v1'
+const VERSION = 'v2'
 const CACHE = `flowhealth-${VERSION}`
 const SHELL = ['/', '/manifest.webmanifest', '/favicon.svg', '/icons/icon-192.png', '/icons/apple-touch-icon.png']
 

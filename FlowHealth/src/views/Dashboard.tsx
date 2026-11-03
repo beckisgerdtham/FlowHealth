@@ -12,14 +12,14 @@ import {
   greeting,
 } from '../lib/format'
 import { calculateHealth, goalProgress } from '../lib/health'
-import { getFlowInsight } from '../lib/insights'
+import { getTodaysBoost } from '../lib/boosts'
 import { lastDays, summarize } from '../lib/trends'
 
 export function Dashboard({ profile, entries, onLog }: { profile: Profile; entries: WeightEntry[]; onLog: () => void }) {
   const health = calculateHealth(profile)
   const summary = summarize(entries)
   const recent = summarize(lastDays(entries, 42))
-  const insight = getFlowInsight(summary, health, profile)
+  const insight = getTodaysBoost(summary, health, profile)
 
   const current = profile.currentWeight
   const start = summary.first?.weightKg ?? current
@@ -133,7 +133,7 @@ export function Dashboard({ profile, entries, onLog }: { profile: Profile; entri
           <Icon name="spark" />
         </div>
         <div>
-          <span className="tiny-label">FLOW INSIGHT</span>
+          <span className="tiny-label">TODAY’S BOOST</span>
           <p>{insight.title}</p>
           <small>{insight.detail}</small>
         </div>
@@ -144,8 +144,8 @@ export function Dashboard({ profile, entries, onLog }: { profile: Profile; entri
           <Icon name="spark" />
         </span>
         <div>
-          <span className="tiny-label">PRODUCT OVERVIEW</span>
-          <p>FlowHealth helps users achieve body-weight goals using science-based calorie planning and progress tracking.</p>
+          <span className="tiny-label">ABOUT BECKY BOOST</span>
+          <p>Becky Boost helps you reach your weight goal with science-based calorie planning, progress tracking and a little encouragement along the way.</p>
         </div>
       </section>
 

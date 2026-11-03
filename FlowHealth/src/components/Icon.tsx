@@ -16,6 +16,7 @@ export type IconName =
   | 'code'
   | 'close'
   | 'chevron'
+  | 'lock'
 
 export function Icon({ name, className = '' }: { name: IconName; className?: string }) {
   const paths: Record<IconName, ReactNode> = {
@@ -55,6 +56,12 @@ export function Icon({ name, className = '' }: { name: IconName; className?: str
     code: <path d="m9 7-5 5 5 5m6-10 5 5-5 5m-1-13-4 16" />,
     close: <path d="m6 6 12 12M18 6 6 18" />,
     chevron: <path d="m9 6 6 6-6 6" />,
+    lock: (
+      <>
+        <rect x="5" y="11" width="14" height="9" rx="2" />
+        <path d="M8 11V8a4 4 0 0 1 8 0v3" />
+      </>
+    ),
   }
 
   return (

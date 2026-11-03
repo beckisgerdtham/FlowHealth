@@ -21,7 +21,7 @@ const navItems: { view: View; label: string; icon: IconName }[] = [
   { view: 'today', label: 'Today', icon: 'home' },
   { view: 'trends', label: 'Trends', icon: 'chart' },
   { view: 'plan', label: 'Plan', icon: 'target' },
-  { view: 'insights', label: 'Insights', icon: 'spark' },
+  { view: 'insights', label: 'Boost', icon: 'spark' },
 ]
 
 export const syncLabels: Record<SyncStatus, string> = {

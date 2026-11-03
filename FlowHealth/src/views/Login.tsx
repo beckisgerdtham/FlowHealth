@@ -1,13 +1,14 @@
 import { useState, type KeyboardEvent } from 'react'
 import { Brand } from '../components/Brand'
 import { Icon } from '../components/Icon'
+import { Turnstile, TURNSTILE_SITE_KEY } from '../components/Turnstile'
 import { friendlyAuthError, MIN_PASSWORD } from '../lib/authErrors'
 import { supabase } from '../lib/supabase'
 
 type Mode = 'signin' | 'signup' | 'forgot' | 'code'
 
 const titles: Record<Mode, string> = {
-  signin: 'Sign in to FlowHealth',
+  signin: 'Sign in to Becky Boost',
   signup: 'Create your account',
   forgot: 'Reset your password',
   code: 'Sign in with a code',
@@ -26,6 +27,10 @@ export function Login() {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [info, setInfo] = useState<string | null>(null)
+  // CAPTCHA token from Cloudflare Turnstile. Single-use: bump captchaRound to get a fresh one.
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null)
+  const [captchaRound, setCaptchaRound] = useState(0)
+  const needsCaptcha = Boolean(TURNSTILE_SITE_KEY) && !(mode === 'code' && codeSent)
 
   const address = email.trim()
 
@@ -37,33 +42,39 @@ export function Login() {
     setCode('')
   }
 
-  async function run(action: () => Promise<{ error: { message: string } | null } | void>) {
+  async function run(action: (captchaToken?: string) => Promise<{ error: { message: string } | null } | void>) {
     if (!/^\S+@\S+\.\S+$/.test(address)) return setError('Enter a valid email address.')
+    if (needsCaptcha && !captchaToken) return setError('Checking that you’re human… try again in a moment.')
     setBusy(true)
     setError(null)
     setInfo(null)
     try {
-      const result = await action()
+      const result = await action(needsCaptcha ? captchaToken ?? undefined : undefined)
       if (result && result.error) setError(friendlyAuthError(result.error.message))
     } catch (e) {
       setError(friendlyAuthError(e instanceof Error ? e.message : String(e)))
     } finally {
       setBusy(false)
+      if (needsCaptcha) {
+        // The token has been used; get a new one for the next attempt.
+        setCaptchaToken(null)
+        setCaptchaRound((r) => r + 1)
+      }
     }
   }
 
   const submit = () => {
     if (mode === 'signin') {
       if (!password) return setError('Enter your password.')
-      return run(() => supabase.auth.signInWithPassword({ email: address, password }))
+      return run((captchaToken) => supabase.auth.signInWithPassword({ email: address, password, options: { captchaToken } }))
     }
     if (mode === 'signup') {
       if (password.length < MIN_PASSWORD) return setError(`Choose a password with at least ${MIN_PASSWORD} characters.`)
-      return run(async () => {
+      return run(async (captchaToken) => {
         const { data, error } = await supabase.auth.signUp({
           email: address,
           password,
-          options: { emailRedirectTo: window.location.origin },
+          options: { emailRedirectTo: window.location.origin, captchaToken },
         })
         // If email confirmation is switched on in Supabase, there is no session yet.
         if (!error && !data.session) setInfo('Check your email to confirm your account, then sign in here.')
@@ -71,18 +82,18 @@ export function Login() {
       })
     }
     if (mode === 'forgot') {
-      return run(async () => {
-        const { error } = await supabase.auth.resetPasswordForEmail(address, { redirectTo: window.location.origin })
+      return run(async (captchaToken) => {
+        const { error } = await supabase.auth.resetPasswordForEmail(address, { redirectTo: window.location.origin, captchaToken })
         if (!error) setInfo(`If ${address} has an account, we’ve sent a link to choose a new password.`)
         return { error }
       })
     }
     // mode === 'code'
     if (!codeSent) {
-      return run(async () => {
+      return run(async (captchaToken) => {
         const { error } = await supabase.auth.signInWithOtp({
           email: address,
-          options: { emailRedirectTo: window.location.origin, shouldCreateUser: false },
+          options: { emailRedirectTo: window.location.origin, shouldCreateUser: false, captchaToken },
         })
         if (!error) setCodeSent(true)
         return { error }
@@ -177,6 +188,17 @@ export function Login() {
               onKeyDown={onEnter}
             />
           </label>
+        )}
+
+        {needsCaptcha && (
+          <Turnstile
+            key={captchaRound}
+            onToken={(token) => {
+              setCaptchaToken(token)
+              if (token) setError(null)
+            }}
+            onError={setError}
+          />
         )}
 
         {error && <p className="form-error">{error}</p>}

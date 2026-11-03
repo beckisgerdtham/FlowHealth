@@ -18,7 +18,7 @@ import {
 const titles = ['Set your weight goal', 'Add your metabolism', 'Choose your activity', 'Your calorie plan']
 const descriptions = [
   'Tell us where you are today and where you want to go.',
-  'Use a measured BMR for the most personalized starting point, or let FlowHealth estimate it.',
+  'Use a measured BMR for the most personalized starting point, or let Becky Boost estimate it.',
   'Select the option that best reflects a typical week.',
   'Review your science-based starting targets before continuing.',
 ]
@@ -125,7 +125,7 @@ export function Onboarding({
             <span className={item <= step ? 'active' : ''} key={item} />
           ))}
         </div>
-        <p className="eyebrow">PERSONALIZE FLOWHEALTH</p>
+        <p className="eyebrow">PERSONALIZE BECKY BOOST</p>
         <p className="onboarding-title" id="onboarding-title">
           {titles[step - 1]}
         </p>
@@ -347,7 +347,7 @@ export function Onboarding({
             </button>
           )}
           <button className="primary-button onboarding-continue" disabled={!stepValid} onClick={next}>
-            {step === 4 ? (onCancel ? 'Save changes' : 'Start using FlowHealth') : 'Continue'} <Icon name="arrow" />
+            {step === 4 ? (onCancel ? 'Save changes' : 'Start using Becky Boost') : 'Continue'} <Icon name="arrow" />
           </button>
         </div>
         {onCancel && (

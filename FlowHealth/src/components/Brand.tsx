@@ -4,7 +4,7 @@ export function Brand() {
       <span className="brand-symbol">
         <span />
       </span>
-      <span>FlowHealth</span>
+      <span>Becky Boost</span>
     </div>
   )
 }

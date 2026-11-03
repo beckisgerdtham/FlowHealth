@@ -364,3 +364,24 @@ input[aria-invalid='true'] { color: var(--danger) !important; }
 .onboarding-field > input[type='password'], .onboarding-field > input[type='email'] { width: 100%; padding: .7rem .75rem; border: 1px solid var(--line); border-radius: .8rem; outline: 0; background: white; color: var(--ink); font-size: .68rem; font-weight: 600; }
 .data-card .change-password { margin-top: .4rem; }
 .data-card .change-password .primary-button { min-height: 2.6rem; margin-top: .7rem; }
+.turnstile { display: flex; justify-content: center; margin-top: .7rem; }
+.turnstile:empty { margin-top: 0; }
+
+/* --- Becky Boost: badges --- */
+.badges-head { display: flex; align-items: baseline; justify-content: space-between; }
+.badges-head span { color: var(--muted); font-size: .55rem; font-weight: 600; }
+.next-boost { display: flex; align-items: center; gap: .75rem; margin-bottom: .6rem; padding: .8rem .9rem; border-radius: 1rem; background: var(--sage-100); }
+.next-boost small { color: var(--sage-500); font-size: .48rem; font-weight: 700; letter-spacing: .12em; }
+.next-boost strong { display: block; font-family: 'Manrope'; font-size: .72rem; }
+.next-boost p { margin: .1rem 0 0; color: var(--muted); font-size: .55rem; }
+.next-boost .badge-icon { background: white; color: var(--sage-700); }
+.badge-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: .5rem; }
+.badge { min-width: 0; display: flex; flex-direction: column; align-items: center; gap: .2rem; padding: .8rem .45rem; border: 1px dashed var(--line); border-radius: 1rem; text-align: center; color: var(--faint); background: transparent; }
+.badge strong { margin-top: .25rem; font-size: .58rem; color: var(--muted); }
+.badge small { font-size: .47rem; line-height: 1.35; }
+.badge-icon { width: 2.2rem; height: 2.2rem; flex: 0 0 auto; display: grid; place-items: center; border-radius: 50%; background: var(--sage-50); color: var(--faint); }
+.badge-icon svg { width: 1rem; }
+.badge.unlocked { border-style: solid; background: white; box-shadow: var(--card-shadow); color: var(--muted); }
+.badge.unlocked strong { color: var(--ink); }
+.badge.unlocked .badge-icon { background: var(--sage-500); color: white; }
+@media (max-width: 350px) { .badge-grid { grid-template-columns: repeat(2, 1fr); } }
