@@ -2,6 +2,7 @@ import { useCallback, useState } from 'react'
 import type { Session } from '@supabase/supabase-js'
 import type { Profile, View } from './types'
 import { Brand } from './components/Brand'
+import { ChangePassword } from './components/ChangePassword'
 import { Icon, type IconName } from './components/Icon'
 import { initials, todayIso } from './lib/format'
 import { newId } from './lib/storage'
@@ -32,7 +33,7 @@ export const syncLabels: Record<SyncStatus, string> = {
 
 /** Signed out → login screen. Signed in → the app, backed by Supabase. */
 export default function App() {
-  const session = useSession()
+  const { session, recovery, clearRecovery } = useSession()
 
   if (session === undefined) {
     return (
@@ -54,10 +55,10 @@ export default function App() {
     )
   }
   // key: start fresh if a different user signs in.
-  return <SignedInApp key={session.user.id} session={session} />
+  return <SignedInApp key={session.user.id} session={session} recovery={recovery} onRecovered={clearRecovery} />
 }
 
-function SignedInApp({ session }: { session: Session }) {
+function SignedInApp({ session, recovery, onRecovered }: { session: Session; recovery: boolean; onRecovered: () => void }) {
   const data = useCloudData(session.user.id)
   const [view, setView] = useState<View>('today')
   const [logging, setLogging] = useState(false)
@@ -142,7 +143,24 @@ function SignedInApp({ session }: { session: Session }) {
           ))}
         </nav>
       </div>
-      {showOnboarding && (
+      {recovery && (
+        <div className="onboarding-backdrop">
+          <section className="onboarding-card" aria-labelledby="recovery-title">
+            <div className="onboarding-top">
+              <Brand />
+            </div>
+            <p className="onboarding-title login-eyebrow" id="recovery-title">
+              Choose a new password
+            </p>
+            <p className="onboarding-copy">You opened a password reset link. Pick a new password for {session.user.email}.</p>
+            <ChangePassword submitLabel="Save new password" onDone={onRecovered} />
+            <button className="skip-button" onClick={onRecovered}>
+              Not now
+            </button>
+          </section>
+        </div>
+      )}
+      {!recovery && showOnboarding && (
         <Onboarding
           key={editingProfile ? 'edit' : 'new'}
           profile={profile}

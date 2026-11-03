@@ -353,3 +353,14 @@ input[aria-invalid='true'] { color: var(--danger) !important; }
   .app-notice { top: calc(4.6rem + env(safe-area-inset-top)); }
   .onboarding-backdrop { padding-top: max(1.2rem, env(safe-area-inset-top)); padding-bottom: max(1.2rem, env(safe-area-inset-bottom)); }
 }
+
+/* --- Password sign-in --- */
+.auth-tabs { display: grid; grid-template-columns: 1fr 1fr; gap: .3rem; margin-bottom: .3rem; padding: .25rem; border-radius: .8rem; background: var(--sage-50); }
+.auth-tabs button { padding: .55rem; border: 0; border-radius: .6rem; background: transparent; color: var(--muted); font-size: .6rem; font-weight: 600; }
+.auth-tabs button.active { background: white; color: var(--sage-700); box-shadow: 0 2px 8px rgba(30,50,42,.06); }
+.auth-links { display: flex; flex-wrap: wrap; justify-content: center; gap: .3rem 1rem; margin-top: .8rem; }
+.auth-links button { border: 0; background: none; color: var(--sage-700); font-size: .56rem; font-weight: 600; }
+.form-info { margin: .7rem 0 0; padding: .6rem .7rem; border-radius: .7rem; background: var(--sage-100); color: var(--sage-700); font-size: .58rem; line-height: 1.45; }
+.onboarding-field > input[type='password'], .onboarding-field > input[type='email'] { width: 100%; padding: .7rem .75rem; border: 1px solid var(--line); border-radius: .8rem; outline: 0; background: white; color: var(--ink); font-size: .68rem; font-weight: 600; }
+.data-card .change-password { margin-top: .4rem; }
+.data-card .change-password .primary-button { min-height: 2.6rem; margin-top: .7rem; }
