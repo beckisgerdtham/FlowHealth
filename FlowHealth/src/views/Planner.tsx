@@ -3,24 +3,29 @@ import type { ActivityLevel, Profile, Sex } from '../types'
 import { Icon } from '../components/Icon'
 import { NumberInput } from '../components/NumberInput'
 import { formatMonthYear, formatWeeks } from '../lib/format'
-import { activityLevels, activityMultipliers, calculateHealth, caloriePlans, estimateBmr } from '../lib/health'
+import { activityLevels, activityMultipliers, calculateHealth, caloriePlans, estimateBmr, isSafeAdjustment, planLabel, safeAdjustment } from '../lib/health'
 
 export function Planner({
   profile,
   entryCount,
+  email,
+  syncLabel,
   onChange,
-  onLoadSample,
   onReset,
+  onSignOut,
 }: {
   profile: Profile
   entryCount: number
+  email: string
+  syncLabel: string
   onChange: (profile: Profile) => void
-  onLoadSample: () => void
   onReset: () => void
+  onSignOut: () => void
 }) {
   const health = calculateHealth(profile)
   const [confirmReset, setConfirmReset] = useState(false)
   const set = <K extends keyof Profile>(key: K, value: Profile[K]) => onChange({ ...profile, [key]: value })
+  const suggested = safeAdjustment(profile)
 
   return (
     <>
@@ -52,6 +57,18 @@ export function Planner({
           </div>
         </div>
       </section>
+
+      {health.belowMinimum && (
+        <div className="safety-warning" role="alert">
+          <strong>Your daily target is too low</strong>
+          <p>
+            {health.targetCalories.toLocaleString('en-GB')} kcal is below your safe minimum of {health.minimum.toLocaleString('en-GB')} kcal
+            (your BMR, and never under {profile.sex === 'Male' ? '1,500' : '1,200'} kcal). Eating this little can cost muscle and
+            energy and is hard to sustain.
+          </p>
+          <button onClick={() => set('adjustment', suggested)}>Switch to {planLabel(suggested)}</button>
+        </div>
+      )}
 
       <section className="energy-foundation">
         <div className="energy-card">
@@ -85,21 +102,35 @@ export function Planner({
       </div>
 
       <p className="section-label">CHOOSE YOUR CALORIE TARGET</p>
+      <p className="section-note">Plans below {health.minimum.toLocaleString('en-GB')} kcal/day are locked to keep your target at or above your BMR.</p>
       <section className="calorie-options">
+        {!caloriePlans.some((plan) => plan.adjustment === profile.adjustment) && (
+          <button className="sage selected" onClick={() => undefined}>
+            <span className="calorie-plan-dot" />
+            <span>
+              <strong>{planLabel(profile.adjustment)}</strong>
+              <small>{profile.adjustment} kcal · sized to your minimum</small>
+            </span>
+            <b>{health.targetCalories.toLocaleString('en-GB')}</b>
+            <Icon name="check" />
+          </button>
+        )}
         {caloriePlans.map((plan) => {
           const selected = profile.adjustment === plan.adjustment
+          const safe = isSafeAdjustment(profile, plan.adjustment)
           return (
             <button
-              className={`${plan.tone} ${selected ? 'selected' : ''}`}
+              className={`${plan.tone} ${selected ? 'selected' : ''} ${safe ? '' : 'unsafe'}`}
               key={plan.label}
+              disabled={!safe && !selected}
+              title={safe ? undefined : 'Below your safe minimum'}
               onClick={() => set('adjustment', plan.adjustment)}
             >
               <span className="calorie-plan-dot" />
               <span>
                 <strong>{plan.label}</strong>
                 <small>
-                  {plan.adjustment > 0 ? '+' : ''}
-                  {plan.adjustment} kcal
+                  {safe ? `${plan.adjustment > 0 ? '+' : ''}${plan.adjustment} kcal` : 'Below your safe minimum'}
                 </small>
               </span>
               <b>{(health.tdee + plan.adjustment).toLocaleString('en-GB')}</b>
@@ -149,41 +180,48 @@ export function Planner({
           <label>
             <span>Height</span>
             <div>
-              <NumberInput value={profile.height} min={50} max={250} onChange={(v) => set('height', v)} />
+              <NumberInput value={profile.height} min={50} max={250} placeholder="—" onChange={(v) => set('height', v)} onEmpty={() => set('height', null)} />
               <small>cm</small>
             </div>
           </label>
           <label>
             <span>Age</span>
             <div>
-              <NumberInput value={profile.age} min={10} max={120} onChange={(v) => set('age', Math.round(v))} />
+              <NumberInput value={profile.age} min={10} max={120} placeholder="—" onChange={(v) => set('age', Math.round(v))} onEmpty={() => set('age', null)} />
               <small>years</small>
             </div>
           </label>
           <label>
             <span>Sex</span>
-            <select value={profile.sex} onChange={(event) => set('sex', event.target.value as Sex)}>
+            <select value={profile.sex ?? ''} onChange={(event) => set('sex', (event.target.value || null) as Sex | null)}>
+              <option value="">Select</option>
               <option>Female</option>
               <option>Male</option>
             </select>
           </label>
         </div>
-        <button className="estimate-button" onClick={() => set('bmr', estimateBmr(profile))}>
-          Estimate BMR from my details
-        </button>
+        {(() => {
+          const estimate = estimateBmr(profile)
+          return (
+            <button className="estimate-button" disabled={estimate === null} onClick={() => estimate !== null && set('bmr', estimate)}>
+              {estimate === null ? 'Add height, age and sex to estimate BMR' : `Estimate BMR from my details (${estimate.toLocaleString('en-GB')} kcal)`}
+            </button>
+          )
+        })()}
       </section>
 
       <section className="content-card data-card">
         <div className="card-heading">
           <div>
-            <p className="card-title">Your data</p>
+            <p className="card-title">Your account</p>
             <p className="card-subtitle">
-              {entryCount} weigh-in{entryCount === 1 ? '' : 's'} · stored only in this browser
+              {email} · {entryCount} weigh-in{entryCount === 1 ? '' : 's'}
             </p>
           </div>
         </div>
-        <button className="estimate-button" onClick={onLoadSample}>
-          Load sample data (replaces weigh-ins)
+        <p className="sync-line">{syncLabel}</p>
+        <button className="estimate-button" onClick={onSignOut}>
+          Sign out
         </button>
         <button
           className={`danger-button ${confirmReset ? 'confirm' : ''}`}
@@ -193,7 +231,7 @@ export function Planner({
           }}
           onBlur={() => setConfirmReset(false)}
         >
-          {confirmReset ? 'Tap again to delete everything' : 'Reset all data'}
+          {confirmReset ? 'Tap again to permanently delete all your data' : 'Delete all my data'}
         </button>
       </section>
       <p className="medical-note">Estimates are for general wellness and are not medical advice.</p>

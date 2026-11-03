@@ -11,11 +11,9 @@ const PREVIEW_ROWS = 7
 export function Trends({
   entries,
   onDelete,
-  onLoadSample,
 }: {
   entries: WeightEntry[]
   onDelete: (id: string) => void
-  onLoadSample: () => void
 }) {
   const [range, setRange] = useState<Range>('3M')
   const [showAll, setShowAll] = useState(false)
@@ -36,10 +34,7 @@ export function Trends({
       {all.count === 0 ? (
         <section className="content-card empty-state">
           <p className="card-title">No weigh-ins yet</p>
-          <p className="card-subtitle">Log your weight on the Today screen, or load six weeks of sample data to explore.</p>
-          <button className="estimate-button" onClick={onLoadSample}>
-            Load sample data
-          </button>
+          <p className="card-subtitle">Log your weight on the Today screen to start your history.</p>
         </section>
       ) : (
         <>

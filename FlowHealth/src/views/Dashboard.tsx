@@ -97,7 +97,7 @@ export function Dashboard({ profile, entries, onLog }: { profile: Profile; entri
           </span>
           <span className="metric-label">Daily target</span>
           <strong>{health.targetCalories.toLocaleString('en-GB')}</strong>
-          <small>kcal per day</small>
+          {health.belowMinimum ? <small className="metric-warning">Below safe minimum · see Plan</small> : <small>kcal per day</small>}
         </article>
       </div>
 

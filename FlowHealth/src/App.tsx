@@ -1,79 +1,93 @@
 import { useCallback, useState } from 'react'
-import type { Profile, View, WeightEntry } from './types'
+import type { Session } from '@supabase/supabase-js'
+import type { Profile, View } from './types'
 import { Brand } from './components/Brand'
 import { Icon, type IconName } from './components/Icon'
 import { initials, todayIso } from './lib/format'
-import { makeSampleEntries } from './lib/sampleData'
-import { isEntryList, isProfileOrNull, newId, usePersistentState } from './lib/storage'
-import { sortByDate } from './lib/trends'
+import { newId } from './lib/storage'
+import { supabase } from './lib/supabase'
+import { useCloudData, type SyncStatus } from './lib/useCloudData'
+import { useSession } from './lib/useSession'
 import { Dashboard } from './views/Dashboard'
-import { Explorer } from './views/Explorer'
 import { Insights } from './views/Insights'
 import { LogSheet } from './views/LogSheet'
+import { Login } from './views/Login'
 import { Onboarding } from './views/Onboarding'
 import { Planner } from './views/Planner'
 import { Trends } from './views/Trends'
-
-const STORAGE_KEYS = {
-  profile: 'flowhealth:v1:profile',
-  entries: 'flowhealth:v1:entries',
-}
-
-/** Starting values shown in onboarding for a new user. */
-const defaultProfile: Profile = {
-  name: '',
-  bmr: 1920,
-  activity: 'Moderately Active',
-  age: 32,
-  sex: 'Female',
-  height: 178,
-  currentWeight: 84,
-  targetWeight: 78,
-  adjustment: -500,
-}
 
 const navItems: { view: View; label: string; icon: IconName }[] = [
   { view: 'today', label: 'Today', icon: 'home' },
   { view: 'trends', label: 'Trends', icon: 'chart' },
   { view: 'plan', label: 'Plan', icon: 'target' },
   { view: 'insights', label: 'Insights', icon: 'spark' },
-  { view: 'data', label: 'Data', icon: 'data' },
 ]
 
-/** Insert an entry, replacing any existing entry on the same date. */
-const upsert = (entries: WeightEntry[], entry: WeightEntry) => sortByDate([...entries.filter((e) => e.date !== entry.date), entry])
+export const syncLabels: Record<SyncStatus, string> = {
+  synced: 'All changes saved',
+  saving: 'Saving…',
+  offline: 'Offline – changes will sync when you’re back online',
+  error: 'Sync problem',
+}
 
+/** Signed out → login screen. Signed in → the app, backed by Supabase. */
 export default function App() {
+  const session = useSession()
+
+  if (session === undefined) {
+    return (
+      <main className="app-shell">
+        <div className="mobile-app splash">
+          <Brand />
+        </div>
+      </main>
+    )
+  }
+  if (session === null) {
+    return (
+      <main className="app-shell">
+        <div className="mobile-app splash">
+          <Brand />
+        </div>
+        <Login />
+      </main>
+    )
+  }
+  // key: start fresh if a different user signs in.
+  return <SignedInApp key={session.user.id} session={session} />
+}
+
+function SignedInApp({ session }: { session: Session }) {
+  const data = useCloudData(session.user.id)
   const [view, setView] = useState<View>('today')
   const [logging, setLogging] = useState(false)
   const [editingProfile, setEditingProfile] = useState(false)
-  const [savedProfile, setSavedProfile] = usePersistentState<Profile | null>(STORAGE_KEYS.profile, null, isProfileOrNull)
-  const [entries, setEntries] = usePersistentState<WeightEntry[]>(STORAGE_KEYS.entries, [], isEntryList)
 
   // The latest weigh-in is the source of truth for current weight.
-  const sorted = sortByDate(entries)
+  const sorted = data.entries
   const latest = sorted[sorted.length - 1]
-  const base = savedProfile ?? defaultProfile
-  const profile: Profile = { ...base, currentWeight: latest?.weightKg ?? base.currentWeight }
-  const showOnboarding = savedProfile === null || editingProfile
+  const profile: Profile | null = data.profile && { ...data.profile, currentWeight: latest?.weightKg ?? data.profile.currentWeight }
+  const showOnboarding = !data.loading && (profile === null || editingProfile)
 
   const closeLog = useCallback(() => setLogging(false), [])
 
   function completeOnboarding(next: Profile) {
-    setSavedProfile(next)
+    data.setProfile(next)
     setEditingProfile(false)
     // Record the weight entered during onboarding as today's weigh-in if it differs.
     if (!latest || latest.weightKg !== next.currentWeight) {
-      setEntries((prev) =>
-        upsert(prev, { id: newId(), date: todayIso(), weightKg: next.currentWeight, loggedAt: new Date().toISOString() }),
-      )
+      data.upsertEntry({ id: newId(), date: todayIso(), weightKg: next.currentWeight, loggedAt: new Date().toISOString() })
     }
   }
 
   function resetAll() {
-    setEntries([])
-    setSavedProfile(null)
+    data.removeAll()
     setView('today')
+  }
+
+  async function signOut() {
+    data.clearDevice()
+    await supabase.auth.signOut({ scope: 'local' })
   }
 
   return (
@@ -81,30 +95,43 @@ export default function App() {
       <div className="mobile-app">
         <header className="app-header">
           <Brand />
-          <button className="header-action" aria-label="Edit profile" onClick={() => setEditingProfile(true)}>
-            {initials(profile.name)}
-          </button>
+          <div className="header-right">
+            {data.status !== 'synced' && (
+              <span className={`sync-chip ${data.status}`} title={syncLabels[data.status]}>
+                {data.status === 'saving' ? 'Saving…' : data.status === 'offline' ? 'Offline' : 'Sync issue'}
+              </span>
+            )}
+            <button className="header-action" aria-label="Edit profile" disabled={!profile} onClick={() => setEditingProfile(true)}>
+              {profile ? initials(profile.name) : ''}
+            </button>
+          </div>
         </header>
-        <div key={view} className={`view-content ${view === 'data' ? 'data-view' : ''}`}>
-          {view === 'today' && <Dashboard profile={profile} entries={sorted} onLog={() => setLogging(true)} />}
-          {view === 'trends' && (
-            <Trends
-              entries={sorted}
-              onDelete={(id) => setEntries((prev) => prev.filter((e) => e.id !== id))}
-              onLoadSample={() => setEntries(makeSampleEntries(profile.currentWeight, profile.targetWeight))}
-            />
-          )}
-          {view === 'plan' && (
+        {(data.error || data.imported !== null) && (
+          <div className={`app-notice ${data.error ? 'error' : ''}`} role="status">
+            <span>
+              {data.error ?? `Moved ${data.imported} weigh-in${data.imported === 1 ? '' : 's'} from this device to your account.`}
+            </span>
+            <button aria-label="Dismiss" onClick={data.error ? data.dismissError : data.dismissImported}>
+              <Icon name="close" />
+            </button>
+          </div>
+        )}
+        <div key={view} className="view-content">
+          {data.loading && <p className="loading-note">Loading your data…</p>}
+          {profile && view === 'today' && <Dashboard profile={profile} entries={sorted} onLog={() => setLogging(true)} />}
+          {profile && view === 'trends' && <Trends entries={sorted} onDelete={data.removeEntry} />}
+          {profile && view === 'plan' && (
             <Planner
               profile={profile}
               entryCount={sorted.length}
-              onChange={(next) => setSavedProfile(next)}
-              onLoadSample={() => setEntries(makeSampleEntries(profile.currentWeight, profile.targetWeight))}
+              email={session.user.email ?? ''}
+              syncLabel={syncLabels[data.status]}
+              onChange={data.setProfile}
               onReset={resetAll}
+              onSignOut={signOut}
             />
           )}
-          {view === 'insights' && <Insights profile={profile} entries={sorted} />}
-          {view === 'data' && <Explorer latestWeight={profile.currentWeight} />}
+          {profile && view === 'insights' && <Insights profile={profile} entries={sorted} />}
         </div>
         <nav className="bottom-nav" aria-label="Primary navigation">
           {navItems.map((item) => (
@@ -120,16 +147,12 @@ export default function App() {
           key={editingProfile ? 'edit' : 'new'}
           profile={profile}
           onComplete={completeOnboarding}
-          onCancel={savedProfile && editingProfile ? () => setEditingProfile(false) : undefined}
+          onCancel={profile && editingProfile ? () => setEditingProfile(false) : undefined}
+          onSignOut={signOut}
         />
       )}
-      {logging && (
-        <LogSheet
-          entries={sorted}
-          lastWeight={profile.currentWeight}
-          onSave={(entry) => setEntries((prev) => upsert(prev, entry))}
-          onClose={closeLog}
-        />
+      {logging && profile && (
+        <LogSheet entries={sorted} lastWeight={profile.currentWeight} onSave={data.upsertEntry} onClose={closeLog} />
       )}
     </main>
   )

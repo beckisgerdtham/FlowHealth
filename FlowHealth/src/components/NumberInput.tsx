@@ -8,22 +8,27 @@ import { parseDecimal } from '../lib/format'
 export function NumberInput({
   value,
   onChange,
+  onEmpty,
   min = 0,
   max = Infinity,
   ...rest
 }: {
-  value: number
+  /** null = no value yet (shows an empty field). */
+  value: number | null
   onChange: (value: number) => void
+  /** Called when the field is cleared or holds an invalid number. */
+  onEmpty?: () => void
   min?: number
   max?: number
+  placeholder?: string
   'aria-label'?: string
   id?: string
 }) {
-  const [text, setText] = useState(String(value))
+  const [text, setText] = useState(value === null ? '' : String(value))
 
   // Follow changes made elsewhere (e.g. "Estimate BMR").
   useEffect(() => {
-    if (parseDecimal(text) !== value) setText(String(value))
+    if (value !== null && parseDecimal(text) !== value) setText(String(value))
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [value])
 
@@ -35,15 +40,17 @@ export function NumberInput({
       {...rest}
       inputMode="decimal"
       value={text}
-      aria-invalid={invalid || text === ''}
+      aria-invalid={invalid}
       onChange={(event) => {
         const next = event.target.value
         setText(next)
         const n = parseDecimal(next)
         if (!Number.isNaN(n) && n >= min && n <= max) onChange(n)
+        else onEmpty?.()
       }}
       onBlur={() => {
-        if (text === '' || invalid) setText(String(value))
+        // Without onEmpty the field is required: restore the last valid value.
+        if (!onEmpty && value !== null && (text === '' || invalid)) setText(String(value))
       }}
     />
   )

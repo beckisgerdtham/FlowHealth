@@ -1,4 +1,4 @@
-export type View = 'today' | 'trends' | 'plan' | 'insights' | 'data'
+export type View = 'today' | 'trends' | 'plan' | 'insights'
 
 export type ActivityLevel = 'Sedentary' | 'Lightly Active' | 'Moderately Active' | 'Very Active' | 'Extremely Active'
 
@@ -8,9 +8,10 @@ export type Profile = {
   name: string
   bmr: number
   activity: ActivityLevel
-  age: number
-  sex: Sex
-  height: number
+  /** Optional when BMR is measured (e.g. InBody) rather than estimated. */
+  age: number | null
+  sex: Sex | null
+  height: number | null
   /** Weight entered during onboarding. The latest weigh-in takes precedence once one exists. */
   currentWeight: number
   targetWeight: number
