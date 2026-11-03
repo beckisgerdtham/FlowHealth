@@ -10,7 +10,6 @@ import {
   formatSignedKg,
   formatWeeks,
   greeting,
-  initials,
 } from '../lib/format'
 import { calculateHealth, goalProgress } from '../lib/health'
 import { getFlowInsight } from '../lib/insights'
@@ -46,7 +45,6 @@ export function Dashboard({ profile, entries, onLog }: { profile: Profile; entri
             {summary.count < 2 ? 'Log your weight regularly to see your trend.' : 'Every check-in sharpens your trend.'}
           </p>
         </div>
-        <div className="avatar">{initials(profile.name)}</div>
       </section>
 
       <section className="weight-hero">
