@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import type { ActivityLevel, Profile, Sex } from '../types'
+import { ChangePassword } from '../components/ChangePassword'
 import { Icon } from '../components/Icon'
 import { NumberInput } from '../components/NumberInput'
 import { formatMonthYear, formatWeeks } from '../lib/format'
@@ -24,6 +25,7 @@ export function Planner({
 }) {
   const health = calculateHealth(profile)
   const [confirmReset, setConfirmReset] = useState(false)
+  const [changingPassword, setChangingPassword] = useState(false)
   const set = <K extends keyof Profile>(key: K, value: Profile[K]) => onChange({ ...profile, [key]: value })
   const suggested = safeAdjustment(profile)
 
@@ -220,6 +222,13 @@ export function Planner({
           </div>
         </div>
         <p className="sync-line">{syncLabel}</p>
+        {changingPassword ? (
+          <ChangePassword onDone={() => setTimeout(() => setChangingPassword(false), 1500)} />
+        ) : (
+          <button className="estimate-button" onClick={() => setChangingPassword(true)}>
+            Set or change password
+          </button>
+        )}
         <button className="estimate-button" onClick={onSignOut}>
           Sign out
         </button>
